@@ -128,18 +128,29 @@ resolve_function <- function(locate) {
 }
 
 run_cli <- function(tool, args, timeout) {
-  env <- paste0(names(tool$env), "=", shQuote(tool$env), recycle0 = TRUE)
+  if (length(tool$env) > 0) {
+    previous_env <- Sys.getenv(names(tool$env), unset = NA, names = TRUE)
+    on.exit(restore_env(previous_env), add = TRUE)
+    do.call(Sys.setenv, as.list(tool$env))
+  }
   lines <- suppressWarnings(
     system2(
       tool$path,
       shQuote(args),
       stdout = TRUE,
       stderr = TRUE,
-      env = env,
       timeout = timeout
     )
   )
   list(lines = lines, timed_out = identical(attr(lines, "status"), 124L))
+}
+
+restore_env <- function(previous_env) {
+  was_unset <- is.na(previous_env)
+  Sys.unsetenv(names(previous_env)[was_unset])
+  if (any(!was_unset)) {
+    do.call(Sys.setenv, as.list(previous_env[!was_unset]))
+  }
 }
 
 clean_output <- function(lines) {

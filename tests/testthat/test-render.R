@@ -50,6 +50,8 @@ describe("cli_help_rd()", {
   })
 
   it("marks output that was cut off by the timeout", {
+    child_tmp <- withr::local_tempdir()
+    withr::local_envvar(TMPDIR = child_tmp, TMP = child_tmp, TEMP = child_tmp)
     rd <- cli_help_rd(
       rscript,
       c("-e", "cat('partial\\n'); flush(stdout()); Sys.sleep(10)"),
@@ -69,6 +71,24 @@ describe("cli_help_rd()", {
       locate = locate
     )
     expect_match(rd, "found it")
+  })
+
+  it("restores the environment after the tool runs", {
+    withr::local_envvar(VENTRO_WAS_SET = "before", VENTRO_WAS_UNSET = NA)
+    locate <- function(command) {
+      list(
+        path = rscript,
+        env = c(VENTRO_WAS_SET = "during", VENTRO_WAS_UNSET = "during")
+      )
+    }
+    rd <- cli_help_rd(
+      "anything",
+      c("-e", "cat(Sys.getenv(c('VENTRO_WAS_SET', 'VENTRO_WAS_UNSET')))"),
+      locate = locate
+    )
+    expect_match(rd, "during during")
+    expect_identical(Sys.getenv("VENTRO_WAS_SET"), "before")
+    expect_true(is.na(Sys.getenv("VENTRO_WAS_UNSET", unset = NA)))
   })
 
   it("renders inside a help page via \\Sexpr", {
