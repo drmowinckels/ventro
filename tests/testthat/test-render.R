@@ -196,6 +196,12 @@ describe("read_output()", {
     expect_identical(nchar(output$lines), as.integer(output_limit_bytes))
   })
 
+  it("ignores output written after the given size", {
+    output_file <- withr::local_tempfile()
+    writeBin(charToRaw("usage\nKilled: 9\n"), output_file)
+    expect_identical(read_output(output_file, size = 6)$lines, "usage")
+  })
+
   it("returns no lines for empty output", {
     output_file <- withr::local_tempfile()
     file.create(output_file)

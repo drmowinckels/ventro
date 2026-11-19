@@ -150,11 +150,17 @@ run_cli <- function(tool, args, timeout) {
     stdout = output_file,
     stderr = "2>&1"
   )
-  timed_out <- tryCatch(
-    wait_for_tool(process, output_file, timeout),
+  stopped <- tryCatch(
+    list(
+      timed_out = wait_for_tool(process, output_file, timeout),
+      output_size = file.size(output_file)
+    ),
     finally = stop_tool(process)
   )
-  c(read_output(output_file), timed_out = timed_out)
+  c(
+    read_output(output_file, stopped$output_size),
+    timed_out = stopped$timed_out
+  )
 }
 
 wait_for_tool <- function(process, output_file, timeout) {
@@ -187,8 +193,8 @@ output_limit_bytes <- 1e6
 
 output_limit_label <- "1,000,000 bytes"
 
-read_output <- function(path) {
-  bytes <- readBin(path, "raw", output_limit_bytes + 1)
+read_output <- function(path, size = file.size(path)) {
+  bytes <- readBin(path, "raw", min(size, output_limit_bytes + 1))
   truncated <- length(bytes) > output_limit_bytes
   bytes <- bytes[seq_len(min(length(bytes), output_limit_bytes))]
   text <- rawToChar(bytes[bytes != 0])
