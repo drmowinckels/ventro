@@ -174,8 +174,9 @@ wait_for_tool <- function(process, output_file, timeout) {
 }
 
 stop_tool <- function(process) {
-  # kill_tree() finds processes by an environment marker, which ps cannot
-  # read on recent macOS; kill() signals the tool's whole process group.
+  # kill_tree() finds processes by an environment marker, which macOS does
+  # not expose for Apple platform binaries such as /bin/sh and /bin/sleep;
+  # kill() signals the tool's whole process group.
   process$kill()
   process$kill_tree()
 }
