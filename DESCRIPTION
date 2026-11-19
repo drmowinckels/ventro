@@ -1,0 +1,27 @@
+Package: ventro
+Title: Let Command Line Tools Speak in R Help Pages
+Version: 0.0.0.9000
+Authors@R: person("Athanasia M.", "Mowinckel", , "a.m.mowinckel@psykologi.uio.no",
+    role = c("aut", "cre"), comment = c(ORCID = "0000-0002-5756-0223"))
+Description: Embeds the help output of a command line tool into R help
+    pages at render time, so help reflects the tool installed on the
+    user's machine when the page is viewed. Output is escaped for Rd,
+    cleaned of terminal formatting, and replaced by a short notice when
+    the tool is missing, so rendering never fails. Use it from 'roxygen2'
+    inline 'Rd' code, or through the optional '@clihelp' tag.
+License: MIT + file LICENSE
+Depends: R (>= 4.0.1)
+Encoding: UTF-8
+Suggests: 
+    knitr,
+    rmarkdown,
+    roxygen2 (>= 7.2.0),
+    testthat (>= 3.0.0),
+    withr
+Config/testthat/edition: 3
+Roxygen: list(markdown = TRUE)
+Config/roxygen2/version: 8.1.1
+VignetteBuilder: knitr
+URL: https://github.com/drmowinckels/ventro,
+    https://drmowinckels.github.io/ventro/
+BugReports: https://github.com/drmowinckels/ventro/issues

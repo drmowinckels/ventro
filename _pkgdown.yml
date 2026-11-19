@@ -1,0 +1,34 @@
+url: https://drmowinckels.github.io/ventro/
+
+template:
+  bootstrap: 5
+  light-switch: true
+  theme: a11y-light
+  theme-dark: a11y-dark
+  bslib:
+    bg: "#F7ECD9"
+    fg: "#2B1D2E"
+    primary: "#2F6664"
+    secondary: "#E8B04B"
+    dark: "#2B1D2E"
+    body-bg-dark: "#1C1220"
+    body-color-dark: "#FFF6E5"
+    link-color-dark: "#8CC5C2"
+    link-hover-color-dark: "#E8B04B"
+    border-radius: "0.75rem"
+    base_font:
+      google:
+        family: "DM Sans"
+        wght: [400, 700]
+        ital: [0, 1]
+    heading_font: { google: "DM Serif Display" }
+    code_font: { google: "JetBrains Mono" }
+    headings-font-weight: 400
+
+reference:
+  - title: Rendering command line help
+    contents:
+      - cli_help_rd
+  - title: roxygen2 tag
+    contents:
+      - clihelp-tag
