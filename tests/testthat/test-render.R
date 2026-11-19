@@ -17,8 +17,16 @@ describe("cli_help_rd()", {
   })
 
   it("renders a notice when the tool prints nothing", {
+    withr::local_options(ventro.debug = TRUE)
     rd <- cli_help_rd(rscript, c("-e", "invisible()"))
     expect_match(rd, "not available")
+    expect_match(rd, "Reason: the tool printed nothing.", fixed = TRUE)
+  })
+
+  it("renders a notice when the tool prints only terminal codes", {
+    withr::local_options(ventro.debug = TRUE)
+    rd <- cli_help_rd(rscript, c("-e", "cat('\\033[0m')"))
+    expect_match(rd, "Reason: the tool printed nothing.", fixed = TRUE)
   })
 
   it("adds the failure reason when ventro.debug is set", {
@@ -29,10 +37,30 @@ describe("cli_help_rd()", {
     expect_match(cli_help_rd("not-a-command"), "could not be found")
   })
 
+  it("strips terminal formatting from the failure reason", {
+    withr::local_options(ventro.debug = TRUE)
+    rd <- cli_help_rd(
+      "x",
+      locate = function(command) stop("\033[31mboom\033[39m")
+    )
+    expect_match(rd, "Reason: boom", fixed = TRUE)
+    expect_no_match(rd, "\033", fixed = TRUE)
+  })
+
+  it("renders a notice when the failure reason is not valid UTF-8", {
+    withr::local_options(ventro.debug = TRUE)
+    rd <- cli_help_rd("x", locate = function(command) stop("bad \xff byte"))
+    expect_match(rd, "Reason: bad ? byte", fixed = TRUE)
+  })
+
   it("reports a timeout when the tool hangs without printing", {
     skip_if(!nzchar(Sys.which("sleep")), "sleep is not available")
     withr::local_options(ventro.debug = TRUE)
-    expect_match(cli_help_rd("sleep", "10", timeout = 1), "timed out")
+    expect_match(
+      cli_help_rd("sleep", "10", timeout = 1),
+      "Reason: the tool timed out after 1 seconds.",
+      fixed = TRUE
+    )
   })
 
   it("captures help output that parses as Rd", {
@@ -100,8 +128,62 @@ describe("rd_escape()", {
   })
 })
 
-describe("clean_output()", {
+describe("strip_terminal_codes()", {
   it("removes ANSI codes and overstrikes", {
-    expect_equal(clean_output(c("\033[1mbold\033[0m", "_\bu")), "bold\nu")
+    expect_equal(
+      strip_terminal_codes(c("\033[1mbold\033[0m", "_\bu")),
+      c("bold", "u")
+    )
+  })
+
+  it("removes terminal hyperlinks and cursor codes", {
+    lines <- c(
+      "\033]8;;https://example.org\aDocs\033]8;;\a",
+      "\033]8;;https://example.org\033\\Site\033]8;;\033\\",
+      "\033[?25lspinner\033[?25h"
+    )
+    expect_equal(strip_terminal_codes(lines), c("Docs", "Site", "spinner"))
+  })
+
+  it("removes other escape sequences and control characters", {
+    lines <- c(
+      "\033]0;window title\aTitle",
+      "\033]52;c;ZWNobyBoaQ==\aClipboard",
+      "\033P1$r\033\\Device",
+      "\033(B\033[mCharset",
+      "\u009b31mControl",
+      "Bell\a and\r return",
+      "Keeps\ttabs"
+    )
+    expect_equal(
+      strip_terminal_codes(lines),
+      c(
+        "Title",
+        "Clipboard",
+        "Device",
+        "Charset",
+        "Control",
+        "Bell and return",
+        "Keeps\ttabs"
+      )
+    )
+  })
+
+  it("removes escapes outside the common forms", {
+    st <- intToUtf8(0x9c)
+    lines <- c(
+      "\033=keypad",
+      "\033#8dec",
+      "\033]0;unterminated title",
+      paste0("\033]8;;https://example.org", st, "link\033]8;;", st, " tail")
+    )
+    expect_equal(
+      strip_terminal_codes(lines),
+      c("keypad", "dec", "", "link tail")
+    )
+  })
+
+  it("removes overstrikes on multibyte characters", {
+    expect_equal(strip_terminal_codes("\u00e9\b\u00e9t\u00e9"), "\u00e9t\u00e9")
   })
 })
