@@ -23,5 +23,5 @@ Roxygen: list(markdown = TRUE)
 Config/roxygen2/version: 8.1.1
 VignetteBuilder: knitr
 URL: https://github.com/drmowinckels/ventro,
-    https://drmowinckels.github.io/ventro/
+    https://drmowinckels.io/ventro/
 BugReports: https://github.com/drmowinckels/ventro/issues
