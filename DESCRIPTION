@@ -12,6 +12,8 @@ Description: Embeds the help output of a command line tool into R help
 License: MIT + file LICENSE
 Depends: R (>= 4.0.1)
 Encoding: UTF-8
+Imports:
+    processx (>= 3.5.0)
 Suggests: 
     knitr,
     rmarkdown,
