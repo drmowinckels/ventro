@@ -19,3 +19,14 @@ render_rd_text <- function(rd_lines, env = parent.frame()) {
 rd_page <- function(...) {
   c("\\name{f}\\alias{f}\\title{f}\\description{f}", ...)
 }
+
+local_child_tempdir <- function(env = parent.frame()) {
+  child_tmp <- withr::local_tempdir(.local_envir = env)
+  withr::local_envvar(
+    TMPDIR = child_tmp,
+    TMP = child_tmp,
+    TEMP = child_tmp,
+    .local_envir = env
+  )
+  child_tmp
+}

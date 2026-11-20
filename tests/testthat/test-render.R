@@ -86,6 +86,7 @@ describe("cli_help_rd()", {
   })
 
   it("stops a tool whose output passes the size limit", {
+    local_child_tempdir()
     started <- Sys.time()
     rd <- cli_help_rd(
       rscript,
@@ -123,6 +124,7 @@ describe("cli_help_rd()", {
   })
 
   it("marks output that was cut off by the timeout", {
+    local_child_tempdir()
     rd <- cli_help_rd(
       rscript,
       c("-e", "cat('partial\\n'); flush(stdout()); Sys.sleep(10)"),
