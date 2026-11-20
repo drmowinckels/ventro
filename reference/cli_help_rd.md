@@ -27,7 +27,9 @@ cli_help_rd(command, args = character(), locate = NULL, timeout = 5)
 
 - timeout:
 
-  Seconds before giving up on the command.
+  Seconds to wait for the command before stopping it and showing the
+  output printed so far. Use `Inf` to wait indefinitely. Output longer
+  than 1 MB is also cut off.
 
 ## Value
 

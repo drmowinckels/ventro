@@ -73,7 +73,9 @@ cannot be found or fails, a short notice is returned instead.</p>
 
 
 <dt id="arg-timeout">timeout<a class="anchor" aria-label="anchor" href="#arg-timeout"></a></dt>
-<dd><p>Seconds before giving up on the command.</p></dd>
+<dd><p>Seconds to wait for the command before stopping it and
+showing the output printed so far. Use <code>Inf</code> to wait indefinitely.
+Output longer than 1 MB is also cut off.</p></dd>
 
 </dl></div>
     <div class="section level2">
