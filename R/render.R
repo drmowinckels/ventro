@@ -67,13 +67,20 @@ cli_help_rd <- function(
 render_cli_help <- function(command, args, locate, timeout) {
   tool <- locate_tool(command, locate)
   if (is.null(tool)) {
-    stop("the tool could not be found")
+    stop("the tool could not be found.", call. = FALSE)
   }
   result <- run_cli(tool, args, timeout)
-  if (length(result$lines) == 0) {
-    stop(if (result$timed_out) "the tool timed out" else "it printed nothing")
+  lines <- strip_terminal_codes(result$lines)
+  if (!any(nzchar(lines))) {
+    if (result$timed_out) {
+      stop(
+        sprintf("the tool timed out after %s seconds.", timeout),
+        call. = FALSE
+      )
+    }
+    stop("the tool printed nothing.", call. = FALSE)
   }
-  help_text <- clean_output(result$lines)
+  help_text <- paste(lines, collapse = "\n")
   if (result$timed_out) {
     help_text <- sprintf(
       "%s\n[output cut off after %s seconds]",
@@ -90,7 +97,11 @@ unavailable_notice <- function(command, reason) {
     rd_escape(command)
   )
   if (isTRUE(getOption("ventro.debug"))) {
-    notice <- paste0(notice, " Reason: ", rd_escape(reason))
+    notice <- paste0(
+      notice,
+      " Reason: ",
+      rd_escape(strip_terminal_codes(reason))
+    )
   }
   paste0("\\emph{", notice, "}")
 }
@@ -142,12 +153,23 @@ run_cli <- function(tool, args, timeout) {
   list(lines = lines, timed_out = identical(attr(lines, "status"), 124L))
 }
 
-clean_output <- function(lines) {
-  lines <- iconv(lines, "", "UTF-8", sub = "?")
-  lines <- gsub("\033\\[[0-9;?]*[A-Za-z]", "", lines, useBytes = TRUE)
-  lines <- gsub(".\b", "", lines, useBytes = TRUE)
-  paste(lines, collapse = "\n")
+strip_terminal_codes <- function(x) {
+  x <- iconv(x, "", "UTF-8", sub = "?")
+  x <- gsub(ecma48_escape, "", x, perl = TRUE)
+  gsub(
+    ".\b|[\\x{01}-\\x{08}\\x{0b}-\\x{1f}\\x{7f}-\\x{9f}]",
+    "",
+    x,
+    perl = TRUE
+  )
 }
+
+ecma48_escape <- paste(
+  "(?:\033\\[|\\x{9b})[0-?]*[ -/]*[@-~]",
+  "\033[]PX^_][^\a\033\\x{9c}]*(?:\a|\033\\\\|\\x{9c})?",
+  "\033[ -/]*[0-~]",
+  sep = "|"
+)
 
 rd_escape <- function(x) {
   x <- rd_escape_rlike(x)

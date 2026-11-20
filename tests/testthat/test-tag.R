@@ -34,7 +34,10 @@ describe("@clihelp", {
   })
 
   it("warns when no command is given", {
-    expect_condition(rd_text(clihelp_block("@clihelp")), "requires a command")
+    expect_condition(
+      rd_text(clihelp_block("@clihelp")),
+      "requires a command.*@clihelp mytool --help"
+    )
   })
 
   it("imports cli_help_rd into NAMESPACE", {
