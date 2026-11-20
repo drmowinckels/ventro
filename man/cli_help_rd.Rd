@@ -13,7 +13,9 @@ cli_help_rd(command, args = character(), locate = NULL, timeout = 5)
 
 \item{locate}{Optional locator function, or its name as \code{"pkg::fun"}.}
 
-\item{timeout}{Seconds before giving up on the command.}
+\item{timeout}{Seconds to wait for the command before stopping it and
+showing the output printed so far. Use \code{Inf} to wait indefinitely.
+Output longer than 1 MB is also cut off.}
 }
 \value{
 A single string of Rd markup.

@@ -39,7 +39,9 @@
 #' @param command Name or path of the executable.
 #' @param args Character vector of arguments.
 #' @param locate Optional locator function, or its name as `"pkg::fun"`.
-#' @param timeout Seconds before giving up on the command.
+#' @param timeout Seconds to wait for the command before stopping it and
+#'   showing the output printed so far. Use `Inf` to wait indefinitely.
+#'   Output longer than 1 MB is also cut off.
 #' @return A single string of Rd markup.
 #' @export
 #' @examples
@@ -80,14 +82,14 @@ render_cli_help <- function(command, args, locate, timeout) {
     }
     stop("the tool printed nothing.", call. = FALSE)
   }
-  help_text <- paste(lines, collapse = "\n")
-  if (result$timed_out) {
-    help_text <- sprintf(
-      "%s\n[output cut off after %s seconds]",
-      help_text,
-      timeout
-    )
-  }
+  cut_off_after <- c(
+    if (result$timed_out) paste(timeout, "seconds"),
+    if (result$truncated) output_limit_label
+  )
+  help_text <- paste(
+    c(lines, sprintf("[output cut off after %s]", cut_off_after)),
+    collapse = "\n"
+  )
   paste0("\\preformatted{", rd_escape(help_text), "}")
 }
 
@@ -139,23 +141,78 @@ resolve_function <- function(locate) {
 }
 
 run_cli <- function(tool, args, timeout) {
-  env <- paste0(names(tool$env), "=", shQuote(tool$env), recycle0 = TRUE)
-  lines <- suppressWarnings(
-    system2(
-      tool$path,
-      shQuote(args),
-      stdout = TRUE,
-      stderr = TRUE,
-      env = env,
-      timeout = timeout
-    )
+  output_file <- tempfile()
+  on.exit(unlink(output_file))
+  process <- processx::process$new(
+    tool$path,
+    args,
+    env = if (length(tool$env) > 0) c("current", tool$env),
+    stdout = output_file,
+    stderr = "2>&1"
   )
-  list(lines = lines, timed_out = identical(attr(lines, "status"), 124L))
+  stopped <- tryCatch(
+    list(
+      timed_out = wait_for_tool(process, output_file, timeout),
+      output_size = file.size(output_file)
+    ),
+    finally = stop_tool(process)
+  )
+  c(
+    read_output(output_file, stopped$output_size),
+    timed_out = stopped$timed_out
+  )
+}
+
+wait_for_tool <- function(process, output_file, timeout) {
+  deadline <- Sys.time() + timeout
+  repeat {
+    process$wait(poll_interval_ms)
+    if (!process$is_alive()) {
+      return(FALSE)
+    }
+    if (isTRUE(file.size(output_file) > output_limit_bytes)) {
+      return(FALSE)
+    }
+    if (Sys.time() >= deadline) {
+      return(TRUE)
+    }
+  }
+}
+
+stop_tool <- function(process) {
+  # kill_tree() finds processes by an environment marker, which macOS does
+  # not expose for Apple platform binaries such as /bin/sh and /bin/sleep;
+  # kill() signals the tool's whole process group.
+  process$kill()
+  process$kill_tree()
+}
+
+poll_interval_ms <- 20
+
+output_limit_bytes <- 1e6
+
+output_limit_label <- "1,000,000 bytes"
+
+read_output <- function(path, size = file.size(path)) {
+  bytes <- readBin(path, "raw", min(size, output_limit_bytes + 1))
+  truncated <- length(bytes) > output_limit_bytes
+  bytes <- bytes[seq_len(min(length(bytes), output_limit_bytes))]
+  text <- rawToChar(bytes[bytes != 0])
+  list(
+    lines = strsplit(text, "\n", fixed = TRUE, useBytes = TRUE)[[1]],
+    truncated = truncated
+  )
+}
+
+as_utf8 <- function(x) {
+  valid <- validUTF8(x)
+  x[!valid] <- iconv(x[!valid], "", "UTF-8", sub = "?")
+  Encoding(x[valid]) <- "UTF-8"
+  x
 }
 
 strip_terminal_codes <- function(x) {
-  x <- iconv(x, "", "UTF-8", sub = "?")
-  x <- gsub(ecma48_escape, "", x, perl = TRUE)
+  x <- gsub(ecma48_escape, "", as_utf8(x), perl = TRUE)
   gsub(
     ".\b|[\\x{01}-\\x{08}\\x{0b}-\\x{1f}\\x{7f}-\\x{9f}]",
     "",

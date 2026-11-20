@@ -57,10 +57,55 @@ describe("cli_help_rd()", {
     skip_if(!nzchar(Sys.which("sleep")), "sleep is not available")
     withr::local_options(ventro.debug = TRUE)
     expect_match(
-      cli_help_rd("sleep", "10", timeout = 1),
-      "Reason: the tool timed out after 1 seconds.",
+      cli_help_rd("sleep", "10", timeout = 0.5),
+      "Reason: the tool timed out after 0.5 seconds.",
       fixed = TRUE
     )
+  })
+
+  it("marks the cut-off when a shell wrapper times out", {
+    skip_if(!nzchar(Sys.which("sh")), "sh is not available")
+    rd <- cli_help_rd("sh", c("-c", "echo partial; sleep 10"), timeout = 0.5)
+    expect_match(
+      rd,
+      "partial\n[output cut off after 0.5 seconds]",
+      fixed = TRUE
+    )
+  })
+
+  it("stops the tool when it times out", {
+    skip_if(!nzchar(Sys.which("sh")), "sh is not available")
+    still_running <- withr::local_tempfile()
+    cli_help_rd(
+      "sh",
+      c("-c", paste("echo partial; sleep 1; touch", shQuote(still_running))),
+      timeout = 0.3
+    )
+    Sys.sleep(1.5)
+    expect_false(file.exists(still_running))
+  })
+
+  it("stops a tool whose output passes the size limit", {
+    started <- Sys.time()
+    rd <- cli_help_rd(
+      rscript,
+      c("-e", "repeat cat(strrep('x', 1000), '\\n')"),
+      timeout = 60
+    )
+    expect_match(rd, "[output cut off after 1,000,000 bytes]", fixed = TRUE)
+    expect_lt(as.numeric(Sys.time() - started, units = "secs"), 30)
+  })
+
+  it("returns when the tool exits, even if it leaves a child running", {
+    skip_if(!nzchar(Sys.which("sh")), "sh is not available")
+    started <- Sys.time()
+    rd <- cli_help_rd("sh", c("-c", "sleep 30 & echo hi"), timeout = 20)
+    expect_lt(as.numeric(Sys.time() - started, units = "secs"), 10)
+    expect_identical(rd, "\\preformatted{hi}")
+  })
+
+  it("waits indefinitely when timeout is Inf", {
+    expect_match(cli_help_rd(rscript, "--help", timeout = Inf), "Usage")
   })
 
   it("captures help output that parses as Rd", {
@@ -91,12 +136,18 @@ describe("cli_help_rd()", {
     locate <- function(command) {
       list(path = rscript, env = c(CLIHELP_TEST = "found it"))
     }
+    withr::local_envvar(CLIHELP_INHERITED = "inherited")
     rd <- cli_help_rd(
       "anything",
-      c("-e", "cat(Sys.getenv('CLIHELP_TEST'))"),
+      c("-e", "cat(Sys.getenv(c('CLIHELP_TEST', 'CLIHELP_INHERITED')))"),
       locate = locate
     )
-    expect_match(rd, "found it")
+    expect_match(rd, "found it inherited", fixed = TRUE)
+  })
+
+  it("captures help written to stderr", {
+    rd <- cli_help_rd(rscript, c("-e", "message('usage on stderr')"))
+    expect_match(rd, "usage on stderr", fixed = TRUE)
   })
 
   it("renders inside a help page via \\Sexpr", {
@@ -125,6 +176,50 @@ describe("resolve_function()", {
 describe("rd_escape()", {
   it("escapes Rd special characters", {
     expect_equal(rd_escape("a{b}%c\\d"), "a\\{b\\}\\%c\\\\d")
+  })
+})
+
+describe("read_output()", {
+  it("splits lines and drops NUL bytes", {
+    output_file <- withr::local_tempfile()
+    writeBin(c(charToRaw("a\nb"), as.raw(0), charToRaw("c\n")), output_file)
+    output <- read_output(output_file)
+    expect_identical(output$lines, c("a", "bc"))
+    expect_false(output$truncated)
+  })
+
+  it("reads at most the output limit and flags the rest", {
+    output_file <- withr::local_tempfile()
+    writeBin(as.raw(rep(0x78, output_limit_bytes + 10)), output_file)
+    output <- read_output(output_file)
+    expect_true(output$truncated)
+    expect_identical(nchar(output$lines), as.integer(output_limit_bytes))
+  })
+
+  it("ignores output written after the given size", {
+    output_file <- withr::local_tempfile()
+    writeBin(charToRaw("usage\nKilled: 9\n"), output_file)
+    expect_identical(read_output(output_file, size = 6)$lines, "usage")
+  })
+
+  it("returns no lines for empty output", {
+    output_file <- withr::local_tempfile()
+    file.create(output_file)
+    expect_identical(read_output(output_file)$lines, character())
+  })
+})
+
+describe("as_utf8()", {
+  it("keeps UTF-8 text and replaces bytes that are not valid UTF-8", {
+    skip_if(
+      isTRUE(l10n_info()[["Latin-1"]]),
+      "Latin-1 locales convert the byte"
+    )
+    utf8_line <- rawToChar(charToRaw(enc2utf8("caf\u00e9 \u2192")))
+    latin1_line <- rawToChar(c(charToRaw("latin1:"), as.raw(0xe9)))
+    lines <- as_utf8(c(utf8_line, latin1_line))
+    expect_equal(lines, c("caf\u00e9 \u2192", "latin1:?"))
+    expect_identical(Encoding(lines[[1]]), "UTF-8")
   })
 })
 
