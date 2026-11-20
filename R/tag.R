@@ -31,7 +31,10 @@ roxy_tag_parse.roxy_tag_clihelp <- function(x) {
   lines <- trimws(strsplit(x$raw, "\n", fixed = TRUE)[[1]])
   lines <- lines[nzchar(lines)]
   if (length(lines) == 0) {
-    roxygen2::warn_roxy_tag(x, "requires a command")
+    roxygen2::warn_roxy_tag(
+      x,
+      c("requires a command", i = "For example: {.code @clihelp mytool --help}")
+    )
     return(NULL)
   }
   words <- strsplit(lines[[1]], "\\s+")[[1]]
