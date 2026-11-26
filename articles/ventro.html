@@ -93,17 +93,7 @@ like plenty of real ones.</p>
 <p>Put that text straight into a help page, and this is what readers
 get:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">render_rd</span><span class="op">(</span></span>
-<span>  <span class="st">"\\section{Command line help}{"</span>,</span>
-<span>  <span class="st">"\\preformatted{"</span>, <span class="va">raw_help</span>, <span class="st">"}"</span>,</span>
-<span>  <span class="st">"}"</span></span>
-<span><span class="op">)</span></span>
-<span><span class="co">#&gt; tool</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Description:</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;      A tool.</span></span>
-<span><span class="co">#&gt; </span></span>
+<code class="sourceCode R"><span><span class="fu">render_rd</span><span class="op">(</span><span class="st">"\\preformatted{"</span>, <span class="va">raw_help</span>, <span class="st">"}"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Command line help:</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;      Usage: tool [--format=</span></span>
@@ -127,20 +117,23 @@ everywhere, we’ll use <code>Rscript</code> as the tool, since every R
 installation has one.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">rscript</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Rhome.html" class="external-link">R.home</a></span><span class="op">(</span><span class="st">"bin"</span><span class="op">)</span>, <span class="st">"Rscript"</span><span class="op">)</span></span>
-<span><span class="va">help_rd</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cli_help_rd.html">cli_help_rd</a></span><span class="op">(</span><span class="va">rscript</span>, <span class="st">"--help"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/substr.html" class="external-link">substr</a></span><span class="op">(</span><span class="va">help_rd</span>, <span class="fl">1</span>, <span class="fl">200</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; \preformatted{Usage: Rscript [options] file [args]</span></span>
-<span><span class="co">#&gt;    or: Rscript [options] -e expr [-e expr2 ...] [args]</span></span>
-<span><span class="co">#&gt; A binary front-end to R, for use in scripting applications.</span></span>
+<span><span class="va">print_raw_help</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"-e"</span>, <span class="fu"><a href="https://rdrr.io/r/base/sprintf.html" class="external-link">sprintf</a></span><span class="op">(</span><span class="st">"cat(%s)"</span>, <span class="fu"><a href="https://rdrr.io/r/base/deparse.html" class="external-link">deparse</a></span><span class="op">(</span><span class="va">raw_help</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">render_rd</span><span class="op">(</span><span class="fu"><a href="../reference/cli_help_rd.html">cli_help_rd</a></span><span class="op">(</span><span class="va">rscript</span>, <span class="va">print_raw_help</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Command line help:</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Options:</span></span>
-<span><span class="co">#&gt;   --help              Pr</span></span></code></pre></div>
-<p>It wraps the output in <code>\preformatted{}</code>, escapes it, and
-strips terminal formatting. When the tool isn’t there, it returns a
-notice instead of an error:</p>
+<span><span class="co">#&gt;      Usage: tool [--format=%d] {input} [output]</span></span>
+<span><span class="co">#&gt; </span></span></code></pre></div>
+<p>This time the <code>%</code> and the braces survive:
+<code><a href="../reference/cli_help_rd.html">cli_help_rd()</a></code> wraps the output in
+<code>\preformatted{}</code>, escapes it, and strips terminal
+formatting. When the tool isn’t there, it returns a notice instead of an
+error:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu"><a href="../reference/cli_help_rd.html">cli_help_rd</a></span><span class="op">(</span><span class="st">"mri_convert"</span>, <span class="st">"--help"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; \emph{\code{mri_convert} was not available when this help page was rendered.}</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu">render_rd</span><span class="op">(</span><span class="fu"><a href="../reference/cli_help_rd.html">cli_help_rd</a></span><span class="op">(</span><span class="st">"mri_convert"</span>, <span class="st">"--help"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Command line help:</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;      _'mri_convert' was not available when this help page was</span></span>
+<span><span class="co">#&gt;      rendered._</span></span></code></pre></div>
 <p>A tool that hangs is stopped after five seconds (change it with
 <code>timeout</code>), and whatever it printed by then is shown, marked
 as cut off.</p>
@@ -169,20 +162,10 @@ never used, because the only call to it lives inside the Rd files.</p>
 <code>?mri_convert</code> would show it, with <code>Rscript</code>
 standing in for <code>mri_convert</code>:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">render_rd</span><span class="op">(</span></span>
-<span>  <span class="st">"\\section{Command line help}{"</span>,</span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/sprintf.html" class="external-link">sprintf</a></span><span class="op">(</span></span>
-<span>    <span class="st">"\\Sexpr[stage=render,results=rd]{ventro::cli_help_rd(%s, \"--help\")}"</span>,</span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/deparse.html" class="external-link">deparse</a></span><span class="op">(</span><span class="va">rscript</span><span class="op">)</span></span>
-<span>  <span class="op">)</span>,</span>
-<span>  <span class="st">"}"</span></span>
-<span><span class="op">)</span></span>
-<span><span class="co">#&gt; tool</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Description:</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;      A tool.</span></span>
-<span><span class="co">#&gt; </span></span>
+<code class="sourceCode R"><span><span class="fu">render_rd</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sprintf.html" class="external-link">sprintf</a></span><span class="op">(</span></span>
+<span>  <span class="st">"\\Sexpr[stage=render,results=rd]{ventro::cli_help_rd(%s, \"--help\")}"</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/deparse.html" class="external-link">deparse</a></span><span class="op">(</span><span class="va">rscript</span><span class="op">)</span></span>
+<span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Command line help:</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;      Usage: Rscript [options] file [args]</span></span>
@@ -247,8 +230,11 @@ the one trying to work out why your locator isn’t finding anything. Set
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>ventro.debug <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">broken_locator</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">command</span><span class="op">)</span> <span class="kw"><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop</a></span><span class="op">(</span><span class="st">"FREESURFER_HOME points nowhere"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu"><a href="../reference/cli_help_rd.html">cli_help_rd</a></span><span class="op">(</span><span class="st">"mri_convert"</span>, locate <span class="op">=</span> <span class="va">broken_locator</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; \emph{\code{mri_convert} was not available when this help page was rendered. Reason: FREESURFER_HOME points nowhere}</span></span>
+<span><span class="fu">render_rd</span><span class="op">(</span><span class="fu"><a href="../reference/cli_help_rd.html">cli_help_rd</a></span><span class="op">(</span><span class="st">"mri_convert"</span>, locate <span class="op">=</span> <span class="va">broken_locator</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Command line help:</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;      _'mri_convert' was not available when this help page was rendered.</span></span>
+<span><span class="co">#&gt;      Reason: FREESURFER_HOME points nowhere_</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>ventro.debug <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">

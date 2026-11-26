@@ -34,17 +34,7 @@ Put that text straight into a help page, and this is what readers get:
 
 ``` r
 
-render_rd(
-  "\\section{Command line help}{",
-  "\\preformatted{", raw_help, "}",
-  "}"
-)
-#> tool
-#> 
-#> Description:
-#> 
-#>      A tool.
-#> 
+render_rd("\\preformatted{", raw_help, "}")
 #> Command line help:
 #> 
 #>      Usage: tool [--format=
@@ -71,24 +61,27 @@ the tool, since every R installation has one.
 ``` r
 
 rscript <- file.path(R.home("bin"), "Rscript")
-help_rd <- cli_help_rd(rscript, "--help")
-cat(substr(help_rd, 1, 200))
-#> \preformatted{Usage: Rscript [options] file [args]
-#>    or: Rscript [options] -e expr [-e expr2 ...] [args]
-#> A binary front-end to R, for use in scripting applications.
+print_raw_help <- c("-e", sprintf("cat(%s)", deparse(raw_help)))
+render_rd(cli_help_rd(rscript, print_raw_help))
+#> Command line help:
 #> 
-#> Options:
-#>   --help              Pr
+#>      Usage: tool [--format=%d] {input} [output]
+#> 
 ```
 
-It wraps the output in `\preformatted{}`, escapes it, and strips
-terminal formatting. When the tool isn’t there, it returns a notice
-instead of an error:
+This time the `%` and the braces survive:
+[`cli_help_rd()`](https://drmowinckels.github.io/ventro/reference/cli_help_rd.md)
+wraps the output in `\preformatted{}`, escapes it, and strips terminal
+formatting. When the tool isn’t there, it returns a notice instead of an
+error:
 
 ``` r
 
-cat(cli_help_rd("mri_convert", "--help"))
-#> \emph{\code{mri_convert} was not available when this help page was rendered.}
+render_rd(cli_help_rd("mri_convert", "--help"))
+#> Command line help:
+#> 
+#>      _'mri_convert' was not available when this help page was
+#>      rendered._
 ```
 
 A tool that hangs is stopped after five seconds (change it with
@@ -122,20 +115,10 @@ would show it, with `Rscript` standing in for `mri_convert`:
 
 ``` r
 
-render_rd(
-  "\\section{Command line help}{",
-  sprintf(
-    "\\Sexpr[stage=render,results=rd]{ventro::cli_help_rd(%s, \"--help\")}",
-    deparse(rscript)
-  ),
-  "}"
-)
-#> tool
-#> 
-#> Description:
-#> 
-#>      A tool.
-#> 
+render_rd(sprintf(
+  "\\Sexpr[stage=render,results=rd]{ventro::cli_help_rd(%s, \"--help\")}",
+  deparse(rscript)
+))
 #> Command line help:
 #> 
 #>      Usage: Rscript [options] file [args]
@@ -210,8 +193,11 @@ one trying to work out why your locator isn’t finding anything. Set
 
 options(ventro.debug = TRUE)
 broken_locator <- function(command) stop("FREESURFER_HOME points nowhere")
-cat(cli_help_rd("mri_convert", locate = broken_locator))
-#> \emph{\code{mri_convert} was not available when this help page was rendered. Reason: FREESURFER_HOME points nowhere}
+render_rd(cli_help_rd("mri_convert", locate = broken_locator))
+#> Command line help:
+#> 
+#>      _'mri_convert' was not available when this help page was rendered.
+#>      Reason: FREESURFER_HOME points nowhere_
 options(ventro.debug = NULL)
 ```
 
