@@ -4,8 +4,16 @@ Show a command line tool’s own help inside R documentation, generated
 **when the help page is viewed**. Users see the help for the version
 installed on *their* machine.
 
-roxygen2 can already run code at render time. ventro handles what that
-code has to get right:
+## What ventro adds beyond roxygen2
+
+roxygen2 runs code when you document the package, on *your* machine.
+Pasting a tool’s help, or generating it with inline `` `r ` `` code,
+freezes the help of whatever version you had installed.
+
+Rd’s `\Sexpr[stage=render]` runs code each time a help page is viewed,
+and roxygen2 8.0.0’s inline `Rd` code can write it for you. But the code
+inside it has to get several things right, or it breaks the help page or
+`R CMD check`. ventro is that code:
 
 - **Escaping.** `{`, `}`, `%` and `\` in help text are escaped so the Rd
   stays valid.
@@ -19,6 +27,8 @@ code has to get right:
   invalid encodings are stripped.
 - **Tools not on `PATH`.** A locator function can find the tool and set
   environment variables such as `FREESURFER_HOME`.
+- **An optional `@clihelp` tag.** It writes the section and the import
+  for you, and works on roxygen2 versions before 8.0.0.
 
 ## Usage
 

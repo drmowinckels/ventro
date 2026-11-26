@@ -7,9 +7,9 @@
 <title>Let Command Line Tools Speak in R Help Pages • ventro</title>
 <script src="lightswitch.js"></script><script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
-<script src="deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="deps/DM_Sans-0.4.10/font.css" rel="stylesheet">
-<link href="deps/JetBrains_Mono-0.4.10/font.css" rel="stylesheet">
-<link href="deps/DM_Serif_Display-0.4.10/font.css" rel="stylesheet">
+<script src="deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="deps/DM_Sans-0.5.0/font.css" rel="stylesheet">
+<link href="deps/JetBrains_Mono-0.5.0/font.css" rel="stylesheet">
+<link href="deps/DM_Serif_Display-0.5.0/font.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Let Command Line Tools Speak in R Help Pages">
@@ -65,7 +65,11 @@
 <!-- badges: start -->
 
 <p>Show a command line tool’s own help inside R documentation, generated <strong>when the help page is viewed</strong>. Users see the help for the version installed on <em>their</em> machine.</p>
-<p>roxygen2 can already run code at render time. ventro handles what that code has to get right:</p>
+<div class="section level2">
+<h2 id="what-ventro-adds-beyond-roxygen2">What ventro adds beyond roxygen2<a class="anchor" aria-label="anchor" href="#what-ventro-adds-beyond-roxygen2"></a>
+</h2>
+<p>roxygen2 runs code when you document the package, on <em>your</em> machine. Pasting a tool’s help, or generating it with inline <code>`r `</code> code, freezes the help of whatever version you had installed.</p>
+<p>Rd’s <code>\Sexpr[stage=render]</code> runs code each time a help page is viewed, and roxygen2 8.0.0’s inline <code>Rd</code> code can write it for you. But the code inside it has to get several things right, or it breaks the help page or <code>R CMD check</code>. ventro is that code:</p>
 <ul>
 <li>
 <strong>Escaping.</strong> <code>{</code>, <code>}</code>, <code>%</code> and <code>\</code> in help text are escaped so the Rd stays valid.</li>
@@ -77,7 +81,10 @@
 <strong>Clean output.</strong> ANSI colour codes, terminal bold/underline and invalid encodings are stripped.</li>
 <li>
 <strong>Tools not on <code>PATH</code>.</strong> A locator function can find the tool and set environment variables such as <code>FREESURFER_HOME</code>.</li>
+<li>
+<strong>An optional <code>@clihelp</code> tag.</strong> It writes the section and the import for you, and works on roxygen2 versions before 8.0.0.</li>
 </ul>
+</div>
 <div class="section level2">
 <h2 id="usage">Usage<a class="anchor" aria-label="anchor" href="#usage"></a>
 </h2>
