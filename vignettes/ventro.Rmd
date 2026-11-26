@@ -45,7 +45,12 @@ raw_help <- "Usage: tool [--format=%d] {input} [output]"
 render_rd <- function(...) {
   rd_file <- tempfile(fileext = ".Rd")
   writeLines(
-    c("\\name{tool}\\alias{tool}\\title{tool}\\description{A tool.}", ...),
+    c(
+      "\\name{tool}\\alias{tool}\\title{tool}\\description{A tool.}",
+      "\\section{Command line help}{",
+      ...,
+      "}"
+    ),
     rd_file
   )
   text_file <- tempfile(fileext = ".txt")
@@ -54,7 +59,8 @@ render_rd <- function(...) {
     out = text_file,
     options = list(underline_titles = FALSE)
   )
-  cat(readLines(text_file), sep = "\n")
+  lines <- readLines(text_file)
+  cat(lines[-seq_len(grep("^Command line help", lines) - 1)], sep = "\n")
 }
 ```
 
@@ -62,11 +68,7 @@ Put that text straight into a help page, and this is what readers get:
 
 ```{r}
 #| label: raw-help-broken
-render_rd(
-  "\\section{Command line help}{",
-  "\\preformatted{", raw_help, "}",
-  "}"
-)
+render_rd("\\preformatted{", raw_help, "}")
 ```
 
 Everything from `%` onwards is gone, because `%` starts a comment in Rd.
@@ -86,16 +88,16 @@ To keep this vignette runnable everywhere, we'll use `Rscript` as the tool, sinc
 ```{r}
 #| label: cli-help-rd
 rscript <- file.path(R.home("bin"), "Rscript")
-help_rd <- cli_help_rd(rscript, "--help")
-cat(substr(help_rd, 1, 200))
+print_raw_help <- c("-e", sprintf("cat(%s)", deparse(raw_help)))
+render_rd(cli_help_rd(rscript, print_raw_help))
 ```
 
-It wraps the output in `\preformatted{}`, escapes it, and strips terminal formatting.
+This time the `%` and the braces survive: `cli_help_rd()` wraps the output in `\preformatted{}`, escapes it, and strips terminal formatting.
 When the tool isn't there, it returns a notice instead of an error:
 
 ```{r}
 #| label: missing-tool
-cat(cli_help_rd("mri_convert", "--help"))
+render_rd(cli_help_rd("mri_convert", "--help"))
 ```
 
 A tool that hangs is stopped after five seconds (change it with `timeout`), and whatever it printed by then is shown, marked as cut off.
@@ -125,14 +127,10 @@ Here is the Rd that roxygen2 writes, rendered the way `?mri_convert` would show 
 
 ```{r}
 #| label: rendered-page
-render_rd(
-  "\\section{Command line help}{",
-  sprintf(
-    "\\Sexpr[stage=render,results=rd]{ventro::cli_help_rd(%s, \"--help\")}",
-    deparse(rscript)
-  ),
-  "}"
-)
+render_rd(sprintf(
+  "\\Sexpr[stage=render,results=rd]{ventro::cli_help_rd(%s, \"--help\")}",
+  deparse(rscript)
+))
 ```
 
 ## Tools that aren't on `PATH`
@@ -176,7 +174,7 @@ Set `ventro.debug` and the notice says why:
 #| label: debug
 options(ventro.debug = TRUE)
 broken_locator <- function(command) stop("FREESURFER_HOME points nowhere")
-cat(cli_help_rd("mri_convert", locate = broken_locator))
+render_rd(cli_help_rd("mri_convert", locate = broken_locator))
 options(ventro.debug = NULL)
 ```
 
